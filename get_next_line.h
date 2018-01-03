@@ -18,20 +18,21 @@
 # include <unistd.h>
 # include <stdlib.h>
 
-typedef struct      s_fdlst
+typedef struct		s_list
 {
-	int             fd;
-	char            buf[BUFF_SIZE + 1];
-	int             i;
-	int             r;
-	struct s_fdlst  *prev;
-	struct s_fdlst  *next;
-}                   t_fdlst;
+	int				fd;
+	char			buf[BUFF_SIZE + 1];
+	int				i;
+	int				r;
+	struct s_list	*prev;
+	struct s_list	*next;
+}					t_list;
 
-int                 get_next_line(const int fd, char **line);
-t_list              *find_fd(t_fdlst **head, int fd);
-int                 write_line(char **line, t_fdlst *node);
-int                 spacing(char **line, int ex_space);
-int                 node_delete(t_fdlst **head, t_fdlst *node);
+int					get_next_line(const int fd, char **line);
+t_list				*find_fd(t_list **head, int fd);
+int					write_line(char	**line, t_list *node);
+int					spacing(char **line, int ex_space);
+int					node_delete(t_list **head, t_list *node);
 
 #endif
+

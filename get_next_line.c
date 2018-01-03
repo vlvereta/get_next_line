@@ -12,10 +12,10 @@
 
 #include "get_next_line.h"
 
-int     get_next_line(const int fd, char **line)
+int		get_next_line(const int fd, char **line)
 {
-	t_fdlst         *node;
-	static t_fdlst  *head;
+	t_list			*node;
+	static t_list	*head;
 
 	if (fd < 0 || !line || BUFF_SIZE < 1)
 		return (-1);
@@ -27,11 +27,11 @@ int     get_next_line(const int fd, char **line)
 	return (write_line(line, node) == -1 ? -1 : 1);
 }
 
-t_fdlst *find_fd(t_fdlst **head, int fd)
+t_list	*find_fd(t_list **head, int fd)
 {
-	int     temp_r;
-	t_fdlst *new;
-	t_fdlst *temp;
+	int		temp_r;
+	t_list	*new;
+	t_list	*temp;
 
 	if (head && (temp = *head) && *head)
 		while (temp->next && (temp = temp->next))
@@ -39,7 +39,7 @@ t_fdlst *find_fd(t_fdlst **head, int fd)
 				return (temp->prev);
 	if (head && *head && temp->fd == fd)
 		return (temp);
-	if (!(new = (t_fdlst *)malloc(sizeof(t_fdlst))))
+	if (!(new = (t_list *)malloc(sizeof(t_list))))
 		return (NULL);
 	new->fd = fd;
 	new->i = 0;
@@ -47,8 +47,8 @@ t_fdlst *find_fd(t_fdlst **head, int fd)
 	new->prev = temp;
 	new->r = read(fd, new->buf, BUFF_SIZE);
 	temp_r = new->r;
-	temp_r == -1 ? free(new) : new->buf[new->r] = '\0';
-	temp_r == -1 ? new = NULL : 0;
+	temp_r == -1 ? (free(new)) : ((new->buf)[new->r] = '\0');
+	temp_r == -1 ? (new = NULL) : 0;
 	if (!temp)
 		*head = new;
 	else
@@ -56,7 +56,7 @@ t_fdlst *find_fd(t_fdlst **head, int fd)
 	return (new);
 }
 
-int     write_line(char **line, t_fdlst *node)
+int		write_line(char **line, t_list *node)
 {
 	int	j;
 	int	over_read;
@@ -75,7 +75,7 @@ int     write_line(char **line, t_fdlst *node)
 		over_read = 1;
 		(node->i)++;
 	}
-	else if (!((node->buf)[node->i]))
+	if (!((node->buf)[node->i]))
 	{
 		if ((node->r = read(node->fd, node->buf, BUFF_SIZE)) == -1)
 			return (-1);
@@ -85,10 +85,10 @@ int     write_line(char **line, t_fdlst *node)
 	return (over_read ? 1 : write_line(line, node));
 }
 
-int     spacing(char **line, int ex_space)
+int		spacing(char **line, int ex_space)
 {
-	int     i;
-	char    *temp;
+	int		i;
+	char	*temp;
 
 	if (*line)
 	{
@@ -108,12 +108,12 @@ int     spacing(char **line, int ex_space)
 			return (i);
 		}
 	}
-	else if ((*line = (char *)malloc(sizeof(char) * ex_space + 1)))
+	else if ((*line = (char *)malloc(sizeof(char) * (ex_space + 1))))
 		return (0);
 	return (-1);
 }
 
-int     node_delete(t_fdlst **head, t_fdlst *node)
+int		node_delete(t_list **head, t_list *node)
 {
 	if (head && *head && node)
 	{
@@ -128,3 +128,4 @@ int     node_delete(t_fdlst **head, t_fdlst *node)
 	}
 	return (0);
 }
+
