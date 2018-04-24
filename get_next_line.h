@@ -13,26 +13,25 @@
 #ifndef GET_NEXT_LINE_H
 # define GET_NEXT_LINE_H
 
-# define BUFF_SIZE 32
+# define BUFF_SIZE 1
 
 # include <unistd.h>
 # include <stdlib.h>
+# include "./libft/includes/libft.h"
 
-typedef struct		s_list
+typedef struct		s_fdlist
 {
 	int				fd;
 	char			buf[BUFF_SIZE + 1];
 	int				i;
 	int				r;
-	struct s_list	*prev;
-	struct s_list	*next;
-}					t_list;
+	struct s_fdlist	*next;
+}					t_fdlist;
 
 int					get_next_line(const int fd, char **line);
-t_list				*find_fd(t_list **head, int fd);
-int					write_line(char	**line, t_list *node);
+t_fdlist			*find_fd(t_fdlist **head, int fd);
+int					write_line(char **line, t_fdlist *node, int is_read);
 int					spacing(char **line, int ex_space);
-int					node_delete(t_list **head, t_list *node);
+void				node_delete(t_fdlist **head, int fd);
 
 #endif
-

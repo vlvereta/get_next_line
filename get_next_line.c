@@ -12,10 +12,14 @@
 
 #include "get_next_line.h"
 
-int		get_next_line(const int fd, char **line)
+/*
+**	main function. Checks errors and performs functionality
+*/
+
+int			get_next_line(const int fd, char **line)
 {
-	t_list			*node;
-	static t_list	*head;
+	t_fdlist		*node;
+	static t_fdlist	*head;
 
 	if (fd < 0 || !line || BUFF_SIZE < 1)
 		return (-1);
@@ -23,109 +27,120 @@ int		get_next_line(const int fd, char **line)
 	if (!(node = find_fd(&head, fd)))
 		return (-1);
 	if (!node->i && !node->r)
-		return (node_delete(&head, node));
-	return (write_line(line, node) == -1 ? -1 : 1);
+	{
+		node_delete(&head, fd);
+		return (0);
+	}
+	return (write_line(line, node, 0));
 }
 
-t_list	*find_fd(t_list **head, int fd)
-{
-	int		temp_r;
-	t_list	*new;
-	t_list	*temp;
+/*
+**	to find fd's node or creates new
+*/
 
-	if (head && (temp = *head) && *head)
-		while (temp->next && (temp = temp->next))
-			if ((temp->prev)->fd == fd)
-				return (temp->prev);
-	if (head && *head && temp->fd == fd)
-		return (temp);
-	if (!(new = (t_list *)malloc(sizeof(t_list))))
-		return (NULL);
-	new->fd = fd;
-	new->i = 0;
-	new->next = NULL;
-	new->prev = temp;
-	new->r = read(fd, new->buf, BUFF_SIZE);
-	temp_r = new->r;
-	temp_r == -1 ? (free(new)) : ((new->buf)[new->r] = '\0');
-	temp_r == -1 ? (new = NULL) : 0;
-	if (!temp)
-		*head = new;
-	else
-		temp->next = new;
+t_fdlist	*find_fd(t_fdlist **head, int fd)
+{
+	t_fdlist	*new;
+	t_fdlist	*temp;
+
+	if ((temp = *head))
+	{
+		while (temp)
+		{
+			if (temp->fd == fd)
+				return (temp);
+			temp = temp->next;
+		}
+	}
+	if ((new = (t_fdlist *)malloc(sizeof(t_fdlist))))
+	{
+		ft_bzero(new, sizeof(t_fdlist));
+		new->fd = fd;
+		new->next = *head;
+		if ((new->r = read(fd, new->buf, BUFF_SIZE)) == -1)
+			ft_memdel((void **)(&new));
+		else
+			*head = new;
+	}
 	return (new);
 }
 
-int		write_line(char **line, t_list *node)
-{
-	int	j;
-	int	over_read;
+/*
+**	HEART of the function!
+**	to write line from buffer and returns state
+*/
 
-	j = node->i;
-	over_read = (!node->r ? 1 : 0);
-	while ((node->buf)[j] && (node->buf)[j] != '\n')
-		j++;
-	if ((j = spacing(line, j)) == -1)
-		return (-1);
-	while ((node->buf)[node->i] && (node->buf)[node->i] != '\n')
-		(*line)[j++] = (node->buf)[(node->i)++];
-	(*line)[j] = '\0';
-	if ((node->buf)[node->i] == '\n')
-	{
-		over_read = 1;
-		(node->i)++;
-	}
-	if (!((node->buf)[node->i]))
+int			write_line(char **line, t_fdlist *node, int is_read)
+{
+	int		j;
+
+	if (node->i == node->r)
 	{
 		if ((node->r = read(node->fd, node->buf, BUFF_SIZE)) == -1)
 			return (-1);
-		(node->buf)[node->r] = '\0';
+		node->buf[node->r] = '\0';
 		node->i = 0;
+		return (!(node->r) ? is_read : write_line(line, node, is_read));
 	}
-	return (over_read ? 1 : write_line(line, node));
+	j = node->i;
+	while (j < node->r && node->buf[j] != '\n')
+		j++;
+	if ((j = spacing(line, j)) == -1)
+		return (-1);
+	while (node->i < node->r && node->buf[node->i] != '\n')
+		(*line)[j++] = node->buf[(node->i)++];
+	if (node->buf[(node->i)++] == '\n')
+		return (1);
+	(node->i)--;
+	return (write_line(line, node, 1));
 }
 
-int		spacing(char **line, int ex_space)
+/*
+**	to enlarge line's space and returns index to continue writing
+*/
+
+int			spacing(char **line, int ex_space)
 {
-	int		i;
+	int		len;
 	char	*temp;
 
 	if (*line)
 	{
-		i = 0;
-		while ((*line)[i])
-			i++;
-		if ((temp = (char *)malloc(sizeof(char) * (i + ex_space + 1))))
-		{
-			i = 0;
-			while ((*line)[i])
-			{
-				temp[i] = (*line)[i];
-				i++;
-			}
-			free(*line);
-			*line = temp;
-			return (i);
-		}
+		len = ft_strlen(*line);
+		if ((temp = ft_strnew(len + ex_space)))
+			temp = ft_strncpy(temp, *line, len);
+		ft_strdel(line);
+		*line = temp;
+		return (len);
 	}
-	else if ((*line = (char *)malloc(sizeof(char) * (ex_space + 1))))
+	else if ((*line = ft_strnew(ex_space)))
 		return (0);
 	return (-1);
 }
 
-int		node_delete(t_list **head, t_list *node)
-{
-	if (head && *head && node)
-	{
-		if (node->prev)
-			(node->prev)->next = node->next;
-		else
-			*head = node->next;
-		if (node->next)
-			(node->next)->prev = node->prev;
-		free(node);
-		node = NULL;
-	}
-	return (0);
-}
+/*
+**	to delete fd's node and points new head if needed 
+*/
 
+void		node_delete(t_fdlist **head, int fd)
+{
+	t_fdlist	*del;
+	t_fdlist	*temp;
+
+	if ((temp = *head))
+	{
+		if (temp->fd == fd)
+		{
+			*head = temp->next;
+			ft_memdel((void **)(&temp));
+		}
+		else
+		{
+			while (temp->next && temp->next->fd != fd)
+				temp = temp->next;
+			del = temp->next;
+			temp->next = temp->next->next;
+			ft_memdel((void **)(&del));
+		}
+	}
+}
